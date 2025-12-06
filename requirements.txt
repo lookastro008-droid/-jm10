@@ -1,0 +1,9 @@
+# requirements.txt
+matplotlib==1.3.0
+Flask==3.1.2
+pytz==2025.2
+astral==3.2
+git+https://github.com/astrorigin/pyswisseph.git
+
+# ബാക്കപ്പ്:
+# ephem==4.1.5
