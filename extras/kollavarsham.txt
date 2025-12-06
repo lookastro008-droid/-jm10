@@ -1,0 +1,250 @@
+from datetime import datetime, timedelta
+import swisseph as swe
+from astral import LocationInfo
+from astral.sun import sun
+import pytz
+
+# സ്ഥലങ്ങളുടെ ഡാറ്റ
+PLACES = {
+    'Kannur': {
+        'lat': 11.8745,
+        'lon': 75.3704,
+        'timezone': 'Asia/Kolkata'
+    },
+    'Thiruvananthapuram': {
+        'lat': 8.5241,
+        'lon': 76.9366,
+        'timezone': 'Asia/Kolkata'
+    },
+    'Kochi': {
+        'lat': 9.9312,
+        'lon': 76.2673,
+        'timezone': 'Asia/Kolkata'
+    },
+    'Kozhikode': {
+        'lat': 11.2588,
+        'lon': 75.7804,
+        'timezone': 'Asia/Kolkata'
+    },
+    'Thrissur': {
+        'lat': 10.5276,
+        'lon': 76.2144,
+        'timezone': 'Asia/Kolkata'
+    },
+    'Kottayam': {
+        'lat': 9.5869,
+        'lon': 76.5213,
+        'timezone': 'Asia/Kolkata'
+    },
+    'Delhi': {
+        'lat': 28.6139,
+        'lon': 77.2090,
+        'timezone': 'Asia/Kolkata'
+    },
+    'Dubai': {
+        'lat': 25.2048,
+        'lon': 55.2708,
+        'timezone': 'Asia/Dubai'
+    },
+    'New York': {
+        'lat': 40.7128,
+        'lon': -74.0060,
+        'timezone': 'America/New_York'
+    },
+    'Melbourne': {
+        'lat': -37.8136,
+        'lon': 144.9631,
+        'timezone': 'Australia/Melbourne'
+    }
+}
+
+# --- Base correction and year ---
+BASE_YEAR = 2025
+BASE_CORRECTION = -0.7566
+AYANAMSA_PER_YEAR = 0.014
+
+# മലയാളം മാസങ്ങൾ
+MALAYALAM_MONTHS = [
+    (0, 30, 'മേടം'),
+    (30, 60, 'ഇടവം'),
+    (60, 90, 'മിഥുനം'),
+    (90, 120, 'കർക്കടകം'),
+    (120, 150, 'ചിങ്ങം'),
+    (150, 180, 'കന്നി'),
+    (180, 210, 'തുലാം'),
+    (210, 240, 'വൃശ്ചികം'),
+    (240, 270, 'ധനു'),
+    (270, 300, 'മകരം'),
+    (300, 330, 'കുംഭം'),
+    (330, 360, 'മീനം')
+]
+
+def get_dynamic_correction(year):
+    """വർഷം അനുസരിച്ച് അയനാംശം കറക്ഷൻ കണക്കാക്കുന്നു"""
+    year_diff = year - BASE_YEAR
+    return BASE_CORRECTION + (year_diff * AYANAMSA_PER_YEAR)
+
+def get_sunrise_time_local(date_obj, place_name):
+    """astral ഉപയോഗിച്ച് ലോക്കൽ ടൈമിൽ ഉദയസമയം കണക്കാക്കുന്നു"""
+    try:
+        place_data = PLACES[place_name]
+        lat = place_data['lat']
+        lon = place_data['lon']
+        timezone_str = place_data['timezone']
+       
+        loc = LocationInfo(place_name, "Custom", timezone_str, lat, lon)
+        s = sun(loc.observer, date=date_obj, tzinfo=pytz.timezone(timezone_str))
+       
+        # ഉദയസമയം (+3 മിനിറ്റ് കൂട്ടുന്നു)
+        sunrise_time = s['sunrise'] + timedelta(minutes=3)
+        return sunrise_time
+    except Exception as e:
+        raise e
+
+def get_sun_longitude_at_sunrise(date_obj, place_name):
+    """ഉദയസമയത്തെ സൂര്യ ഡിഗ്രി കണക്കാക്കുന്നു"""
+    try:
+        # ഉദയസമയം കണ്ടെത്തുന്നു
+        sunrise_time = get_sunrise_time_local(date_obj, place_name)
+       
+        # ഉദയസമയത്തിന്റെ JD കണക്കാക്കുന്നു
+        jd = swe.julday(sunrise_time.year, sunrise_time.month, sunrise_time.day,
+                        sunrise_time.hour + sunrise_time.minute/60.0 + sunrise_time.second/3600.0)
+       
+        place_data = PLACES[place_name]
+        swe.set_topo(place_data['lon'], place_data['lat'], 0)
+       
+        flags = swe.FLG_SWIEPH
+        sun_pos = swe.calc_ut(jd, swe.SUN, flags)[0]
+        
+        ayanamsa = swe.get_ayanamsa(jd)
+        correction = get_dynamic_correction(date_obj.year)
+        corrected_ayanamsa = ayanamsa + correction
+        nirayana_longitude = (sun_pos[0] - corrected_ayanamsa) % 360
+       
+        return nirayana_longitude, sunrise_time
+       
+    except Exception as e:
+        raise e
+
+def find_month_start_date(year, target_longitude, place_name):
+    """മാസം ആരംഭിക്കുന്ന തീയതി കണ്ടുപിടിക്കുന്നു (ഉദയ ശേഷം മാത്രം ദിവസം കൂട്ടുന്നു)"""
+    # മാസം ആരംഭിക്കുന്ന approximate തീയതി കണ്ടുപിടിക്കുന്നു
+    approx_month = int(target_longitude // 30) + 1
+    approx_date = datetime(year, approx_month, 1)
+    
+    # 10 ദിവസത്തിനുള്ളിൽ ശരിയായ തീയതി കണ്ടുപിടിക്കുന്നു
+    for day_offset in range(0, 10):
+        date_candidate = approx_date + timedelta(days=day_offset)
+        
+        try:
+            # ഉദയസമയത്തെ സൂര്യ ഡിഗ്രി കണക്കാക്കുന്നു
+            sun_long, sunrise_time = get_sun_longitude_at_sunrise(date_candidate, place_name)
+            
+            # സൂര്യൻ ആ മാസത്തിന്റെ ആരംഭ ഡിഗ്രിയിൽ എത്തിയാൽ
+            if sun_long >= target_longitude:
+                # ഈ ദിവസം ഉദയത്തിന് ശേഷമാണോ മാസം ആരംഭിക്കുന്നത് എന്ന് പരിശോധിക്കുന്നു
+                # ഉദയസമയത്ത് ഡിഗ്രി എത്തിയിട്ടുണ്ടെങ്കിൽ ഈ ദിവസം തന്നെ മാസം ആരംഭിക്കുന്നു
+                return date_candidate
+                
+        except Exception as e:
+            continue
+    
+    # കണ്ടെത്തിയില്ലെങ്കിൽ approximate തീയതി തിരികെ നൽകുന്നു
+    return approx_date
+
+def find_chingam_start(year, place_name):
+    """ചിങ്ങമാസം ആരംഭിക്കുന്ന തീയതി കണ്ടുപിടിക്കുന്നു"""
+    return find_month_start_date(year, 120, place_name)
+
+def get_kollavarsham_date_details(date_obj, place_name):
+    """ഒരു തീയതിക്ക് അനുയോജ്യമായ കൊല്ലവർഷം, മാസം, ദിവസം കണക്കാക്കുന്നു"""
+    try:
+        # ഉദയസമയത്തെ സൂര്യ ഡിഗ്രി കണക്കാക്കുന്നു
+        sun_longitude, sunrise_time = get_sun_longitude_at_sunrise(date_obj, place_name)
+        
+        # മാസവും ദിവസവും കണ്ടുപിടിക്കുന്നു
+        current_month = None
+        day_of_month = 1
+        
+        for start, end, month_name in MALAYALAM_MONTHS:
+            if start <= sun_longitude < end:
+                current_month = month_name
+                # 1 ദിവസം = 1 ഡിഗ്രി എന്ന നിരക്കിൽ ദിവസം കണക്കാക്കുന്നു
+                day_of_month = int(sun_longitude - start) + 1
+                break
+        
+        # കൊല്ലവർഷം കണക്കാക്കുന്നു
+        base_year = 2025
+        base_kollavarsham = 1201
+        
+        chingam_start_current = find_chingam_start(date_obj.year, place_name)
+        
+        if date_obj >= chingam_start_current:
+            kollavarsham = base_kollavarsham + (date_obj.year - base_year)
+        else:
+            kollavarsham = base_kollavarsham + (date_obj.year - base_year - 1)
+        
+        return kollavarsham, current_month, day_of_month, sun_longitude
+        
+    except Exception as e:
+        raise e
+
+def kollavarsham_calculation(data):
+    """ഇംഗ്ലീഷ് തീയതി മലയാളം കൊല്ലവർഷത്തിലേക്ക് മാറ്റുന്നു - app.py-യ്ക്കായി റൂട്ട്"""
+    try:
+        # Extract data from the input dictionary
+        year = data['year']
+        month = data['month']
+        day = data['day']
+        hour_12h = data['hour_12h']
+        minute = data['minute']
+        ampm = data['ampm']
+        place = data['place']['name']
+       
+        # Convert to 24-hour format
+        if ampm == 'PM' and hour_12h != '12':
+            hour_24h = int(hour_12h) + 12
+        elif ampm == 'AM' and hour_12h == '12':
+            hour_24h = 0
+        else:
+            hour_24h = int(hour_12h)
+       
+        # Create datetime objects
+        english_date = f"{year}-{month:02d}-{day:02d}"
+        input_time = f"{hour_24h:02d}:{minute:02d}"
+       
+        date_obj = datetime.strptime(english_date, '%Y-%m-%d')
+        time_obj = datetime.strptime(input_time, '%H:%M').time()
+
+        # ഉദയസമയം കണ്ടുപിടിക്കുന്നു
+        sunrise_time = get_sunrise_time_local(date_obj, place)
+        
+        # ഇൻപുട്ട് സമയം കോമ്പൈൻ ചെയ്യുന്നു
+        input_datetime = datetime.combine(date_obj, time_obj)
+        
+        # ടൈംസോൺ ഉപയോഗിച്ച് ലോക്കൽ ഡേറ്റ്ടൈം ഉണ്ടാക്കുന്നു
+        place_data = PLACES[place]
+        tz = pytz.timezone(place_data['timezone'])
+        input_datetime_local = tz.localize(input_datetime)
+        sunrise_time_local = tz.localize(sunrise_time.replace(tzinfo=None))
+        
+        # പ്രാദേശിക സമയം ഉദയത്തിന് മുൻപേ എങ്കിൽ തലേ ദിവസത്തെ കൊല്ലമാസ ദിനമായി എടുക്കണം
+        if input_datetime_local < sunrise_time_local:
+            # ഉദയത്തിന് മുമ്പായതിനാൽ തലേ ദിവസം ഉപയോഗിക്കുന്നു
+            calculation_date = date_obj - timedelta(days=1)
+        else:
+            # ഉദയത്തിന് ശേഷമായതിനാൽ ഇന്നത്തെ തീയതി ഉപയോഗിക്കുന്നു
+            calculation_date = date_obj
+
+        # കൊല്ലവർഷം, മാസം, ദിവസം കണക്കാക്കുന്നു
+        kollavarsham, current_month, day_of_month, sun_longitude = get_kollavarsham_date_details(calculation_date, place)
+
+        result = f"കൊല്ലവർഷം: {kollavarsham} {current_month} {day_of_month}"
+        return result
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+# Initialize swisseph
+swe.set_ephe_path()

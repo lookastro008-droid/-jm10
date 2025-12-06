@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ജ്യോതിഷ കണക്കുകൂട്ടൽ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans Malayalam', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            min-height: 100vh; padding: 10px; color: #3e2723;
+            font-size: 19px;
+        }
+        
+        /* New: Control for show/hide top controls */
+        .controls-visible { display: flex !important; }
+        .controls-hidden { display: none !important; }
+        
+        .fixed-header {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #8d6e63 0%, #6d4c41 100%);
+            z-index: 1000;
+            padding: 10px 0;
+            border-bottom: 3px solid #5d4037;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .top-container { max-width: 750px; margin: 0 auto 20px; padding: 0; }
+        .top-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
+            transition: opacity 0.3s ease;
+        }
+        .top-controls .input-group { flex: 1; min-width: 120px; }
+        .new-btn {
+            background: linear-gradient(135deg, #d84315 0%, #bf360c 100%);
+            color: #fff; border: none; border-radius: 10px;
+            padding: 20px 20px;
+            font-weight: 800; cursor: pointer; transition: all 0.3s ease;
+            font-size: 23px;
+            height: 65px;
+            white-space: nowrap;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .new-btn:hover {
+            background: linear-gradient(135deg, #bf360c 0%, #9a0007 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+        }
+        .dropdown {
+            width: 100%;
+            padding: 20px 12px;
+            border: 2px solid #5d4037; border-radius: 10px;
+            background: #fff; color: #3e2723;
+            font-weight: 700;
+            font-size: 19px;
+            cursor: pointer;
+            height: 65px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .dropdown option {
+            font-weight: bold;
+            font-size: 17px;
+        }
+        .dropdown:focus {
+            outline: none;
+            border-color: #d84315;
+            box-shadow: 0 0 0 3px rgba(216, 67, 21, 0.2);
+        }
+        
+        /* New: Compact form styles */
+        .form-container-top {
+            max-width: 750px; 
+            margin: 0 auto;
+            background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
+            border-radius: 15px; 
+            padding: 20px;
+            border: 2px solid #8d6e63;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            margin-top: 20px;
+        }
+        
+        .results-container {
+            max-width: 750px; margin: 20px auto; padding: 20px;
+            font-size: 20px;
+        }
+        .results-container h3 { display: none; }
+        .info-section {
+            background: linear-gradient(135deg, #fff 0%, #f5f5f5 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 2px solid #8d6e63;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .info-section p {
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 21px;
+            color: #4e342e;
+        }
+        .info-section strong {
+            font-weight: 800;
+            color: #5d4037;
+        }
+        .task-section {
+            margin-top: 25px;
+        }
+        .task-item {
+            padding: 20px 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #3e2723;
+            background: #fff;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            padding-left: 20px;
+            padding-right: 20px;
+            border-left: 5px solid #d84315;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .task-item:not(:last-child) {
+            border-bottom: 2px solid #bcaaa4;
+        }
+        
+        /* Updated: More compact form */
+        .form-container {
+            display: none; 
+            max-width: 750px; 
+            margin: 0 auto;
+            background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
+            border-radius: 15px; 
+            padding: 20px;
+            border: 2px solid #8d6e63;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            margin-top: 20px;
+        }
+        .form-section {
+            background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
+            padding: 15px;
+            margin-bottom: 15px; 
+            border-radius: 10px;
+            border: 1px solid #d7ccc8;
+        }
+        .date-picker, .time-picker, .place-picker {
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            align-items: end;
+        }
+        .input-group { flex: 1; min-width: 100px; }
+        .input-group-small { flex: 0.8; min-width: 80px; }
+        .input-group-medium { flex: 1; min-width: 100px; }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #5d4037;
+            font-weight: 800;
+            font-size: 16px;
+        }
+        .form-dropdown {
+            width: 100%;
+            padding: 12px 10px;
+            border: 2px solid #8d6e63;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #fff;
+            color: #3e2723;
+            font-weight: 700;
+            height: 50px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 12px;
+            border: 2px solid #8d6e63;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #fff;
+            color: #3e2723;
+            font-weight: 700;
+            height: 50px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #d84315;
+            box-shadow: 0 0 0 3px rgba(216, 67, 21, 0.2);
+        }
+        .search-results {
+            position: absolute; 
+            width: 100%; 
+            max-height: 200px; 
+            overflow-y: auto;
+            background: #fff; 
+            border: 2px solid #8d6e63; 
+            border-radius: 8px;
+            z-index: 1000; 
+            display: none; 
+            margin-top: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .result-item {
+            padding: 12px 15px; 
+            cursor: pointer; 
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 16px; 
+            color: #3e2723; 
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+        .result-item:hover {
+            background: #ffccbc;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .place-details {
+            margin-top: 15px; 
+            padding: 15px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
+            border-radius: 8px;
+            border: 1px solid #d7ccc8;
+        }
+        .detail-item {
+            margin-bottom: 8px; 
+            display: flex; 
+            justify-content: space-between;
+            padding: 6px 0; 
+            font-size: 15px;
+        }
+        .detail-item label {
+            font-weight: 800;
+            margin-bottom: 0;
+            font-size: 15px;
+            color: #5d4037;
+        }
+        .detail-item span {
+            font-weight: 800;
+            color: #6d4c41;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #d84315 0%, #bf360c 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #bf360c 0%, #9a0007 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+        }
+        
+        /* Loading overlay styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #d84315;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .please-wait {
+            font-size: 18px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 8px; font-size: 21px; }
+            .top-controls {
+                flex-wrap: nowrap;
+                gap: 6px;
+            }
+            .top-controls .input-group {
+                min-width: 110px;
+            }
+            .new-btn {
+                font-size: 21px;
+                padding: 18px 15px;
+                height: 62px;
+            }
+            .dropdown {
+                padding: 18px 10px;
+                font-size: 19px;
+                height: 62px;
+            }
+            .date-picker, .time-picker, .place-picker {
+                flex-direction: row;
+                gap: 8px;
+                flex-wrap: nowrap;
+            }
+            .input-group { min-width: 90px; }
+            .input-group-small { min-width: 70px; }
+            .input-group-medium { min-width: 90px; }
+            .form-container, .form-container-top { 
+                padding: 18px; 
+                border-radius: 12px; 
+                margin-top: 15px;
+            }
+            .form-section { padding: 12px; margin-bottom: 12px; }
+            .form-dropdown, .search-input {
+                height: 48px;
+                font-size: 16px;
+                padding: 12px 10px;
+            }
+            .results-container { padding: 20px; font-size: 21px; }
+            .task-item {
+                font-size: 21px;
+                padding: 18px 15px;
+            }
+            .info-section p {
+                font-size: 21px;
+            }
+            .search-input {
+                font-size: 16px;
+                padding: 12px 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body { padding: 5px; font-size: 21px; }
+            .top-controls {
+                gap: 4px;
+            }
+            .top-controls .input-group {
+                min-width: 100px;
+            }
+            .new-btn {
+                font-size: 19px;
+                padding: 16px 10px;
+                height: 60px;
+            }
+            .dropdown {
+                padding: 16px 8px;
+                font-size: 17px;
+                height: 60px;
+            }
+            .date-picker, .time-picker, .place-picker {
+                flex-direction: row;
+                gap: 6px;
+                flex-wrap: nowrap;
+            }
+            .input-group { min-width: 80px; }
+            .input-group-small { min-width: 65px; }
+            .input-group-medium { min-width: 85px; }
+            .form-container, .form-container-top { 
+                padding: 15px; 
+                border-radius: 10px;
+                margin-top: 12px;
+            }
+            .form-section { padding: 10px; }
+            .form-dropdown, .search-input {
+                padding: 12px 8px;
+                font-size: 15px;
+                height: 46px;
+            }
+            .results-container { font-size: 21px; }
+            .task-item {
+                font-size: 21px;
+                padding: 16px 12px;
+            }
+            .info-section p {
+                font-size: 21px;
+            }
+            .search-input {
+                font-size: 15px;
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">കണക്കുകൂട്ടൽ നടക്കുന്നു...</div>
+        <div class="please-wait">ദയവായി കാത്തിരിക്കുക</div>
+    </div>
+
+    <!-- Fixed Header with Controls -->
+    <div class="fixed-header" id="fixedHeader">
+        <div class="top-container">
+            <div class="top-controls" id="topControls">
+                <button class="new-btn" id="newBtn">new</button>
+                <!-- ഡ്രോപ്പ്‌ഡൗൺ സ്ഥാനം മാറ്റി - ഗ്രഹനില ഇടതുവശത്ത് -->
+                <div class="input-group">
+                    <select id="grahanila" class="dropdown">
+                        <option value="" disabled selected>ഗ്രഹനില</option>
+                        <option value="graha_nila">ഗ്രഹനില</option>
+                        <option value="graha_sphutam">ഗ്രഹസ്ഫുടങ്ങൾ</option>
+                        <option value="shad_varga">ഷഡ് വർഗ്ഗങ്ങൾ</option>
+                        <option value="ashtakavargam">അഷ്ടകവർഗ്ഗം</option>
+                        <option value="bhavasphutam">ഭാവസ്ഫുടങ്ങൾ</option>
+                        <option value="dasapaharam">ദശാപഹാരങ്ങൾ</option>
+                        <option value="rasi_samayam">രാശി സമയങ്ങൾ</option>
+                        <option value="kalahora">കാലഹോര</option>
+                        <option value="nakshatradi">നക്ഷത്രാദി വിശേഷം</option>
+                    </select>
+                </div>
+                <!-- Updated: Changed ganitham dropdown options -->
+                <div class="input-group">
+                    <select id="ganitham" class="dropdown">
+                        <option value="" disabled selected>ഗണിതങ്ങൾ</option>
+                        <option value="jathakafala">ജാതക ഫലങ്ങൾ</option>
+                        <option value="vivahaporutham">വിവാഹപൊരുത്തം</option>
+                        <option value="prashnam">പ്രശ്നം</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Container (Always visible initially) -->
+    <div class="results-container" id="resultsContainer">
+        <div id="autoResults">
+            <div class="info-section">
+                <p><strong>തീയതി:</strong> <span id="currentDate"></span></p>
+                <p><strong>സമയം:</strong> <span id="currentTime"></span></p>
+                <p><strong>സ്ഥലം:</strong> <span id="currentLocation">കണ്ണൂർ</span></p>
+            </div>
+            
+            <!-- ടാസ്ക്കുകൾക്കുള്ള ടെംപ്ലേറ്റ് ഇവിടെ ചേർക്കാം -->
+            <div class="task-results" id="taskResults">
+                <!-- എല്ലാ റിസൾട്ടുകളും ഇവിടെ ഡിസ്പ്ലേ ആകും -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Container (Initially hidden) -->
+    <div id="mainForm" class="form-container-top" style="display: none;">
+        <form id="dobForm">
+            <div class="form-section">
+                <div class="date-picker">
+                    <div class="input-group-small">
+                        <label>Day</label>
+                        <select id="day" name="day" class="form-dropdown">
+                            <option value="">Day</option>
+                            <!-- Days will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="input-group-small">
+                        <label>Month</label>
+                        <select id="month" name="month" class="form-dropdown">
+                            <option value="">Month</option>
+                            <option value="1">Jan</option>
+                            <option value="2">Feb</option>
+                            <option value="3">Mar</option>
+                            <option value="4">Apr</option>
+                            <option value="5">May</option>
+                            <option value="6">Jun</option>
+                            <option value="7">Jul</option>
+                            <option value="8">Aug</option>
+                            <option value="9">Sep</option>
+                            <option value="10">Oct</option>
+                            <option value="11">Nov</option>
+                            <option value="12">Dec</option>
+                        </select>
+                    </div>
+                    <div class="input-group-medium">
+                        <label>Year</label>
+                        <select id="year" name="year" class="form-dropdown">
+                            <option value="">Year</option>
+                            {% for year in range(1940,2151) %}
+                            <option value="{{ year }}" {% if year==current_year %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="time-picker">
+                    <div class="input-group-small">
+                        <label>Hour</label>
+                        <select id="hour" name="hour" class="form-dropdown">
+                            <option value="">Hour</option>
+                            {% for hour in range(1,13) %}
+                            <option value="{{ hour }}">{{ hour }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-group-small">
+                        <label>Minute</label>
+                        <select id="minute" name="minute" class="form-dropdown">
+                            <option value="">Min</option>
+                            {% for minute in range(0,60) %}
+                            <option value="{{ minute }}">{{ "%02d" % minute }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-group-small">
+                        <label>AM/PM</label>
+                        <select id="ampm" name="ampm" class="form-dropdown">
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="place-picker">
+                    <div class="input-group" style="position: relative;">
+                        <label>Place</label>
+                        <input type="text" id="placeSearch" class="search-input" placeholder="Search place...">
+                        <div id="placeResults" class="search-results"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latitude, Longitude, Timezone -->
+            <div class="form-section">
+                <div class="place-details">
+                    <div class="detail-item">
+                        <label>Latitude</label>
+                        <span id="latValue">11.8745</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Longitude</label>
+                        <span id="lngValue">75.3704</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Timezone</label>
+                        <span id="timezoneValue">Asia/Kolkata</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Calculate</button>
+        </form>
+    </div>
+
+    <script>
+        let currentPlace = {name:"കണ്ണൂർ", lat:11.8745, lng:75.3704, timezone:"Asia/Kolkata"};
+        let placesData = [];
+        let currentFormData = null;
+        let isManualCalculation = false;
+        let isLoading = false;
+        let isFormOpen = false; // Track form state
+
+        // Function to get days in month considering leap years
+        function getDaysInMonth(month, year) {
+            month = parseInt(month);
+            year = parseInt(year);
+            
+            // February - check for leap year
+            if (month === 2) {
+                if ((year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0)) {
+                    return 29;
+                } else {
+                    return 28;
+                }
+            }
+            
+            // Months with 31 days: Jan, Mar, May, Jul, Aug, Oct, Dec
+            if ([1, 3, 5, 7, 8, 10, 12].includes(month)) {
+                return 31;
+            }
+            
+            // Months with 30 days: Apr, Jun, Sep, Nov
+            return 30;
+        }
+
+        // Function to update day dropdown
+        function updateDayDropdown() {
+            const daySelect = document.getElementById('day');
+            const monthSelect = document.getElementById('month');
+            const yearSelect = document.getElementById('year');
+            
+            const selectedDay = daySelect.value;
+            const selectedMonth = monthSelect.value;
+            const selectedYear = yearSelect.value;
+            
+            while (daySelect.options.length > 1) {
+                daySelect.remove(1);
+            }
+            
+            if (selectedMonth && selectedYear) {
+                const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const option = document.createElement('option');
+                    option.value = day;
+                    option.textContent = day;
+                    daySelect.appendChild(option);
+                }
+                
+                if (selectedDay && selectedDay <= daysInMonth) {
+                    daySelect.value = selectedDay;
+                }
+            }
+        }
+
+        function initializeDayDropdown() {
+            const today = new Date();
+            const currentDay = today.getDate();
+            const currentMonth = today.getMonth() + 1;
+            const currentYear = today.getFullYear();
+            
+            const daySelect = document.getElementById('day');
+            
+            while (daySelect.options.length > 1) {
+                daySelect.remove(1);
+            }
+            
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const option = document.createElement('option');
+                option.value = day;
+                option.textContent = day;
+                if (day === currentDay) {
+                    option.selected = true;
+                }
+                daySelect.appendChild(option);
+            }
+        }
+
+        function getSavedPlace(){
+            const savedPlace = localStorage.getItem('lastSelectedPlace');
+            if(savedPlace){
+                try{
+                    return JSON.parse(savedPlace);
+                }catch(e){
+                    console.error('Error parsing saved place:', e);
+                }
+            }
+            return currentPlace;
+        }
+
+        function savePlace(place){
+            localStorage.setItem('lastSelectedPlace', JSON.stringify(place));
+        }
+
+        function showLoading() {
+            isLoading = true;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            isLoading = false;
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // New function: Show/Hide top controls
+        function toggleTopControls(show) {
+            const topControls = document.getElementById('topControls');
+            const fixedHeader = document.getElementById('fixedHeader');
+            
+            if (show) {
+                topControls.classList.remove('controls-hidden');
+                topControls.classList.add('controls-visible');
+                fixedHeader.style.padding = '10px 0';
+            } else {
+                topControls.classList.remove('controls-visible');
+                topControls.classList.add('controls-hidden');
+                fixedHeader.style.padding = '0';
+            }
+        }
+
+        function initializeApp(){
+            const savedPlace = getSavedPlace();
+            currentPlace = savedPlace;
+            console.log("Initializing app with place:", currentPlace);
+            
+            loadPlacesData();
+            
+            document.getElementById('placeSearch').value = currentPlace.name;
+            document.getElementById('latValue').textContent = currentPlace.lat;
+            document.getElementById('lngValue').textContent = currentPlace.lng;
+            document.getElementById('timezoneValue').textContent = currentPlace.timezone;
+            document.getElementById('currentLocation').textContent = currentPlace.name;
+            
+            initializeDayDropdown();
+            
+            loadAutoTaskResults();
+        }
+
+        function loadPlacesData() {
+            fetch('/search_places?q=')
+                .then(response => response.json())
+                .then(places => {
+                    placesData = places;
+                    console.log("Loaded places data:", placesData);
+                })
+                .catch(error => {
+                    console.error('Error loading places data:', error);
+                    placesData = [
+                        {name: "കണ്ണൂർ", lat: 11.8745, lng: 75.3704, timezone: "Asia/Kolkata"},
+                        {name: "തിരുവനന്തപുരം", lat: 8.5241, lng: 76.9366, timezone: "Asia/Kolkata"}
+                    ];
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            initializeApp();
+            
+            document.getElementById('placeSearch').addEventListener('click', function() {
+                this.focus();
+                this.select();
+            });
+
+            // Handle grahanila dropdown
+            document.getElementById('grahanila').addEventListener('change', function(e) {
+                if (e.target.value) {
+                    handleExtraSelection(e.target.value);
+                    e.target.value = ''; // Reset dropdown
+                }
+            });
+
+            // Handle ganitham dropdown - NEW OPTIONS
+            document.getElementById('ganitham').addEventListener('change', function(e) {
+                if (e.target.value) {
+                    if (e.target.value === 'jathakafala') {
+                        handleJathakafala();
+                    } else if (e.target.value === 'vivahaporutham') {
+                        window.open('/porutha', '_blank');
+                    } else if (e.target.value === 'prashnam') {
+                        window.open('/extras3/mainprashna', '_blank');
+                    }
+                    e.target.value = ''; // Reset dropdown
+                }
+            });
+
+            document.getElementById('month').addEventListener('change', updateDayDropdown);
+            document.getElementById('year').addEventListener('change', updateDayDropdown);
+        });
+
+        function handleJathakafala() {
+            console.log("Opening Jathaka Fala...");
+            
+            // Use current form data if available, otherwise use auto data
+            let calculationData;
+            
+            if (isManualCalculation && currentFormData) {
+                calculationData = {
+                    place: currentPlace,
+                    day: currentFormData.day,
+                    month: currentFormData.month,
+                    year: currentFormData.year,
+                    hour_24h: currentFormData.hour_24h,
+                    minute: currentFormData.minute,
+                    calculation_type: 'manual'
+                };
+            } else {
+                const currentDate = document.getElementById('currentDate').textContent;
+                const currentTime = document.getElementById('currentTime').textContent;
+                
+                calculationData = {
+                    place: currentPlace,
+                    current_date: currentDate,
+                    current_time: currentTime,
+                    calculation_type: 'auto'
+                };
+            }
+            
+            // Open Jathaka Fala in new window
+            const url = `/extras2/jathakafala?place=${encodeURIComponent(currentPlace.name)}&year=${calculationData.year || ''}&month=${calculationData.month || ''}&day=${calculationData.day || ''}&hour_24h=${calculationData.hour_24h || ''}&minute=${calculationData.minute || ''}`;
+            window.open(url, '_blank');
+        }
+
+        function handleExtraSelection(selection) {
+            console.log("Extra selection:", selection);
+            
+            let calculationData;
+            
+            if (isManualCalculation && currentFormData) {
+                calculationData = {
+                    selection: selection,
+                    place: currentPlace,
+                    day: currentFormData.day,
+                    month: currentFormData.month,
+                    year: currentFormData.year,
+                    hour_24h: currentFormData.hour_24h,
+                    minute: currentFormData.minute,
+                    calculation_type: 'manual'
+                };
+            } else {
+                const currentDate = document.getElementById('currentDate').textContent;
+                const currentTime = document.getElementById('currentTime').textContent;
+                
+                calculationData = {
+                    selection: selection,
+                    place: currentPlace,
+                    current_date: currentDate,
+                    current_time: currentTime,
+                    calculation_type: 'auto'
+                };
+            }
+
+            showLoading();
+
+            fetch('/extras_calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(calculationData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Extras calculation response:", data);
+                hideLoading();
+                
+                if (data.success) {
+                    const url = `/extras_result/${selection}?place=${encodeURIComponent(currentPlace.name)}&year=${calculationData.year || ''}&month=${calculationData.month || ''}&day=${calculationData.day || ''}&hour_24h=${calculationData.hour_24h || ''}&minute=${calculationData.minute || ''}`;
+                    window.open(url, '_blank');
+                } else {
+                    alert('കണക്കുകൂട്ടലിൽ പിശക്: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error in extras calculation:', error);
+                hideLoading();
+                alert('കണക്കുകൂട്ടലിൽ പിശക് സംഭവിച്ചു');
+            });
+        }
+
+        function loadAutoTaskResults(){
+            console.log("Loading auto results for:", currentPlace);
+            isManualCalculation = false;
+            
+            if (!document.getElementById('currentDate').textContent) {
+                showLoading();
+            }
+            
+            fetch('/auto_calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({place: currentPlace})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Auto calculation response:", data);
+                hideLoading();
+                displayTaskResults(data);
+            })
+            .catch(error => {
+                console.error('Error loading auto results:', error);
+                hideLoading();
+                displayTaskResults({success:false, error:"Failed to load results"});
+            });
+        }
+
+        function displayTaskResults(data){
+            const taskResults = document.getElementById('taskResults');
+            
+            if(data.success){
+                let html = '';
+                
+                if(data.calculations['കലിദിനം']){
+                    html += `<div class="task-item">${data.calculations['കലിദിനം']}</div>`;
+                }
+                if(data.calculations['കൊല്ലവർഷം']){
+                    html += `<div class="task-item">${data.calculations['കൊല്ലവർഷം']}</div>`;
+                }
+                if(data.calculations['ശകവർഷം']){
+                    html += `<div class="task-item">${data.calculations['ശകവർഷം']}</div>`;
+                }
+                if(data.calculations['നക്ഷത്രം']){
+                    html += `<div class="task-item">${data.calculations['നക്ഷത്രം']}</div>`;
+                }
+                if(data.calculations['തിഥി']){
+                    html += `<div class="task-item">${data.calculations['തിഥി']}</div>`;
+                }
+                if(data.calculations['കരണം']){
+                    html += `<div class="task-item">${data.calculations['കരണം']}</div>`;
+                }
+                if(data.calculations['യോഗം']){
+                    html += `<div class="task-item">${data.calculations['യോഗം']}</div>`;
+                }
+                if(data.calculations['ദിവസം']){
+                    html += `<div class="task-item">${data.calculations['ദിവസം']}</div>`;
+                }
+                if(data.calculations['പ്രായം']){
+                    html += `<div class="task-item">${data.calculations['പ്രായം']}</div>`;
+                }
+                if(data.calculations['ശിഷ്ടദശ']){
+                    html += `<div class="task-item">${data.calculations['ശിഷ്ടദശ']}</div>`;
+                }
+                if(data.calculations['ദശാഫലം']){
+                    html += `<div class="task-item">${data.calculations['ദശാഫലം']}</div>`;
+                }
+                if(data.calculations['ജനന സമയം']){
+                    html += `<div class="task-item">${data.calculations['ജനന സമയം']}</div>`;
+                }
+                if(data.calculations['ഉദയം']){
+                    html += `<div class="task-item">${data.calculations['ഉദയം']}</div>`;
+                }
+                if(data.calculations['രാഹു കാലം']){
+                    html += `<div class="task-item">${data.calculations['രാഹു കാലം']}</div>`;
+                }
+                if(data.calculations['സൂര്യനക്ഷത്രം']){
+                    html += `<div class="task-item">${data.calculations['സൂര്യനക്ഷത്രം']}</div>`;
+                }
+
+                taskResults.innerHTML = html;
+                
+                if(data.location_used){
+                    document.getElementById('currentLocation').textContent = data.location_used.name;
+                    currentPlace = data.location_used;
+                    savePlace(currentPlace);
+                }
+                
+                if(data.local_time){
+                    document.getElementById('currentDate').textContent = `${data.local_time.day}/${data.local_time.month}/${data.local_time.year}`;
+                    document.getElementById('currentTime').textContent = `${data.local_time.local_time_12h}`;
+                }
+            }else{
+                taskResults.innerHTML = `<div class="task-item">പിശക്: ${data.error || 'Unknown error'}</div>`;
+            }
+        }
+
+        const newBtn = document.getElementById('newBtn');
+        const mainForm = document.getElementById('mainForm');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const dobForm = document.getElementById('dobForm');
+
+        newBtn.addEventListener('click', function(){
+            if (isFormOpen) {
+                // Close form
+                mainForm.style.display = 'none';
+                resultsContainer.style.display = 'block';
+                isFormOpen = false;
+                toggleTopControls(true); // Show top controls
+                
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            } else {
+                // Open form
+                mainForm.style.display = 'block';
+                resultsContainer.style.display = 'none';
+                isFormOpen = true;
+                toggleTopControls(false); // Hide top controls
+                
+                document.getElementById('placeSearch').value = currentPlace.name;
+                document.getElementById('latValue').textContent = currentPlace.lat;
+                document.getElementById('lngValue').textContent = currentPlace.lng;
+                document.getElementById('timezoneValue').textContent = currentPlace.timezone;
+                
+                initializeDayDropdown();
+                
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+                
+                setTimeout(() => {
+                    document.getElementById('placeSearch').focus();
+                    document.getElementById('placeSearch').select();
+                }, 200);
+            }
+        });
+
+        const placeSearch = document.getElementById('placeSearch');
+        const placeResults = document.getElementById('placeResults');
+        const latValue = document.getElementById('latValue');
+        const lngValue = document.getElementById('lngValue');
+        const timezoneValue = document.getElementById('timezoneValue');
+
+        placeSearch.addEventListener('input', function(){
+            const query = this.value;
+            if(query.length < 1){
+                placeResults.style.display = 'none';
+                return;
+            }
+            
+            const filteredPlaces = placesData.filter(place =>
+                place.name.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            placeResults.innerHTML = '';
+            if(filteredPlaces.length > 0){
+                filteredPlaces.forEach(place => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.textContent = place.name;
+                    div.onclick = () => selectPlace(place);
+                    placeResults.appendChild(div);
+                });
+                placeResults.style.display = 'block';
+            }else{
+                placeResults.style.display = 'none';
+            }
+        });
+
+        function selectPlace(place){
+            currentPlace = place;
+            placeSearch.value = place.name;
+            latValue.textContent = place.lat;
+            lngValue.textContent = place.lng;
+            timezoneValue.textContent = place.timezone;
+            placeResults.style.display = 'none';
+            console.log("Place selected:", place);
+            savePlace(place);
+            
+            document.getElementById('currentLocation').textContent = place.name;
+            loadAutoTaskResults();
+        }
+
+        document.addEventListener('click', function(e){
+            if(!placeSearch.contains(e.target)){
+                placeResults.style.display = 'none';
+            }
+        });
+
+        dobForm.addEventListener('submit', function(e){
+            e.preventDefault();
+            const formData = {
+                day: document.getElementById('day').value,
+                month: document.getElementById('month').value,
+                year: document.getElementById('year').value,
+                hour: document.getElementById('hour').value,
+                minute: document.getElementById('minute').value,
+                ampm: document.getElementById('ampm').value,
+                place: currentPlace
+            };
+            
+            console.log("Form submitted:", formData);
+            
+            if(!formData.day || !formData.month || !formData.year || !formData.hour || !formData.minute){
+                alert('ദയവായി എല്ലാ ഫീൽഡുകളും പൂരിപ്പിക്കുക');
+                return;
+            }
+            
+            const hour_24h = formData.ampm === 'PM' && formData.hour != 12 ? parseInt(formData.hour) + 12 :
+                          formData.ampm === 'AM' && formData.hour == 12 ? 0 : parseInt(formData.hour);
+            
+            currentFormData = {
+                day: parseInt(formData.day),
+                month: parseInt(formData.month),
+                year: parseInt(formData.year),
+                hour_24h: hour_24h,
+                minute: parseInt(formData.minute),
+                place: formData.place
+            };
+            
+            isManualCalculation = true;
+            showLoading();
+            
+            fetch('/calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Calculation response:", data);
+                hideLoading();
+                
+                if(data.success){
+                    mainForm.style.display = 'none';
+                    resultsContainer.style.display = 'block';
+                    isFormOpen = false;
+                    toggleTopControls(true); // Show top controls
+                    
+                    if(data.location_used){
+                        currentPlace = data.location_used;
+                        document.getElementById('currentLocation').textContent = currentPlace.name;
+                        savePlace(currentPlace);
+                    }
+                    
+                    document.getElementById('currentDate').textContent = `${formData.day}/${formData.month}/${formData.year}`;
+                    document.getElementById('currentTime').textContent = `${formData.hour}:${formData.minute.toString().padStart(2,'0')} ${formData.ampm}`;
+                    displayTaskResults(data);
+                    
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }else{
+                    alert('കണക്കുകൂട്ടലിൽ പിശക്: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                hideLoading();
+                alert('ഫോം സമർപ്പിക്കുന്നതിൽ പിശക്');
+            });
+        });
+    </script>
+</body>
+</html>
